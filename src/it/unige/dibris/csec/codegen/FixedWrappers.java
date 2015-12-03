@@ -10,15 +10,16 @@ public class FixedWrappers {
 	static {
 		map = new HashMap<Class,String>();
 		
-		map.put(String.class, "new String(\" + %x.toString() + \")");
-		map.put(CharSequence.class, "new String(\" + %x.toString() + \")");
-		map.put(StringBuilder.class, "new StringBuilder(\" + %x.toString() + \")");
-		map.put(StringBuffer.class, "new StringBuffer(\" + %x.toString() + \")");
+		map.put(String.class, "new String(\\\"\" + %x.toString() + \"\\\")");
+		map.put(CharSequence.class, "new String(\\\"\" + %x.toString() + \"\\\")");
+		map.put(StringBuilder.class, "new StringBuilder(\\\"\" + %x.toString() + \"\\\")");
+		map.put(StringBuffer.class, "new StringBuffer(\\\"\" + %x.toString() + \"\\\")");
 		map.put(Class.class, "Class.forName(%x.getCanonicalName())");
 		//map.put(ClassLoader.class, "ClassLoader.getSystemClassLoader()");
-		map.put(Enum.class, "%x");
+		map.put(Enum.class, "\" + %x + \"");
 		map.put(Object.class, "new Object(/* unable to build %x */)");
-		map.put(File.class, "new File(\" + %x.getAbsolutePath() + \")");	
+		map.put(File.class, "new File(\\\"\" + %x.getAbsolutePath() + \"\\\")");
+		map.put(Thread.class, "Thread.currentThread()");
 	}
 	
 	public static boolean known(Class T) {

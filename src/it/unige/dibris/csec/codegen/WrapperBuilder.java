@@ -83,18 +83,26 @@ public class WrapperBuilder {
 		
 		writer.write(" {\n");
 		
+		writer.write("\t\tHelperClass.LogComment(\"" + m.toString() + "\");\n");
 		
 		for(int i = 0; i < T.length; i++) {
 			if(T[i].isArray()) {
-				writer.write("\t\tHelperClass.Log(\""+ T[i].getComponentType().getCanonicalName() +"[] "
-						+ "x" + i + "copy = new " + T[i].getComponentType().getCanonicalName() + "[\" + x"+i+".length + \"]\");\n");
-				writer.write("\t\tfor(int j = 0; j < x"+i+".length; j++)\n");
-				writer.write("\t\t\tHelperClass.Log(\"\\tx"+i+"copy[\"+j+\"] = \" + x"+i+"[j]);\n");
+				
+				if(T[i].getComponentType().getCanonicalName().compareTo("byte") != 0) {
+					writer.write("\t\tHelperClass.Log(\""+ T[i].getComponentType().getCanonicalName() +"[] "
+							+ "x" + i + "copy = new " + T[i].getComponentType().getCanonicalName() + "[\" + x"+i+".length + \"]\");\n");
+					writer.write("\t\tfor(int j = 0; j < x"+i+".length; j++)\n");
+					writer.write("\t\t\tHelperClass.Log(\"x"+i+"copy[\"+j+\"] = \" + x"+i+"[j]);\n");
+				}
+				else {
+					writer.write("\t\tHelperClass.Log(\""+ T[i].getComponentType().getCanonicalName() +"[] "
+							+ "x" + i + "copy = \\\"\" + new String(x"+i+") + \"\\\".toByteArray()\");\n");
+				}
 			}
 		}
 		
 		if(!Modifier.isStatic(m.getModifiers()))
-			writer.write("\t\tHelperClass.Log(HelperClass.get(self.hashCode()) + \"");
+			writer.write("\t\tHelperClass.Log(HelperClass.get(self) + \"");
 		else
 			writer.write("\t\tHelperClass.Log(\"" + clazz.getCanonicalName());
 			
@@ -133,13 +141,13 @@ public class WrapperBuilder {
 			
 			for(int i = 0; i < T.length; i++) {
 				if(T[i].isPrimitive())
-					metaivk.replaceAll("x"+i, "\" + x" +i+ " + \"");
+					metaivk = metaivk.replaceAll("x"+i, "\" + x" +i+ " + \"");
 				else
-					metaivk.replaceAll("x"+i, "\" + HelperClass.get(x"+i+".hashCode()) + \"");
+					metaivk = metaivk.replaceAll("x"+i, "\" + HelperClass.get(x"+i+") + \"");
 			}
 			
 			writer.write("\t\tHelperClass.CreateVariable("
-					+ "result.hashCode(), "
+					+ "result, "
 					+ "\"" + m.getReturnType().getCanonicalName() +"\", "
 					+ "\"" + metaivk + "\");\n");
 		}
@@ -153,7 +161,7 @@ public class WrapperBuilder {
 	private void writeConstructor(Constructor c, FileWriter writer) throws IOException {
 		writer.write("\n");
 		writer.write("\t@InstrumentedMethod(defClass=\"" + clazz.getCanonicalName() + "\", isInit=true, isStatic=false)\n");
-		writer.write("\tpublic static " + clazz.getCanonicalName() + " constructor(" + clazz.getCanonicalName() + " self");
+		writer.write("\tpublic static void constructor(" + clazz.getCanonicalName() + " self");
 		Class[] T = c.getParameterTypes();
 		for(int i = 0; i < T.length; i++) {
 			if(T[i].isPrimitive()) {
@@ -177,17 +185,25 @@ public class WrapperBuilder {
 		
 		writer.write(" {\n");
 		
+		writer.write("\t\tHelperClass.LogComment(\"" + c.toString() + "\");\n");
+		
 		for(int i = 0; i < T.length; i++) {
 			if(T[i].isArray()) {
-				writer.write("\t\tHelperClass.Log(\""+ T[i].getComponentType().getCanonicalName() +"[] "
-						+ "x" + i + "copy = new " + T[i].getComponentType().getCanonicalName() + "[\" + x"+i+".length + \"]\");\n");
-				writer.write("\t\tfor(int j = 0; j < x"+i+".length; j++)\n");
-				writer.write("\t\t\tHelperClass.Log(\"\\tx"+i+"copy[\"+j+\"] = \" + x"+i+"[j]);\n");
+				if(T[i].getComponentType().getCanonicalName().compareTo("byte") != 0) {
+					writer.write("\t\tHelperClass.Log(\""+ T[i].getComponentType().getCanonicalName() +"[] "
+							+ "x" + i + "copy = new " + T[i].getComponentType().getCanonicalName() + "[\" + x"+i+".length + \"]\");\n");
+					writer.write("\t\tfor(int j = 0; j < x"+i+".length; j++)\n");
+					writer.write("\t\t\tHelperClass.Log(\"x"+i+"copy[\"+j+\"] = \" + x"+i+"[j]);\n");
+				}
+				else {
+					writer.write("\t\tHelperClass.Log(\""+ T[i].getComponentType().getCanonicalName() +"[] "
+							+ "x" + i + "copy = \\\"\" + new String(x"+i+") + \"\\\".toByteArray()\");\n");
+				}
 			}
 		}
 		
 		writer.write("\t\tHelperClass.CreateVariable("
-				+ "self.hashCode(), "
+				+ "self, "
 				+ "\"" + clazz.getCanonicalName() +"\", "
 				+ "\"new " + clazz.getCanonicalName() + "(");
 		
@@ -199,7 +215,7 @@ public class WrapperBuilder {
 		
 		writer.write(")\");\n");
 		
-		writer.write("\t\treturn self;\n");
+		//writer.write("\t\treturn self;\n");
 		writer.write("\t}\n");
 	}
 
@@ -214,15 +230,21 @@ public class WrapperBuilder {
 			writer.write(FixedWrappers.getVal(type, var));
 		}
 		else {
-			writer.write("\" + HelperClass.get(" + var + ".hashCode()) + \"");
+			writer.write("\" + HelperClass.get(" + var + ") + \"");
 		}
 	}
 	
 	private boolean toSkip(Constructor c) {
+		for(Class cl : c.getParameterTypes())
+			if(cl.isMemberClass())
+				return true;
 		return !Modifier.isPublic(c.getModifiers()) || Modifier.isTransient(c.getModifiers()) || Modifier.isVolatile(c.getModifiers());
 	}
 	
 	private boolean toSkip(Method c) {
+		for(Class cl : c.getParameterTypes())
+			if(cl.isMemberClass())
+				return true;
 		return !Modifier.isPublic(c.getModifiers()) || Modifier.isTransient(c.getModifiers()) || Modifier.isVolatile(c.getModifiers()) || c.isBridge() || c.isSynthetic();
 	}
 
