@@ -21,7 +21,7 @@ public class ClassDependency {
 	public Set<Class> getDependencies() {
 		
 		for(Constructor constructor : clazz.getConstructors()) {
-			if(Modifier.isPublic(constructor.getModifiers())) {
+			if(Modifier.isPublic(constructor.getModifiers()) && Modifier.isTransient(constructor.getModifiers())) {
 				for(Class c : constructor.getParameterTypes()) {
 					if(!toSkip(c)) {
 						dependency.add(outbox(c));
@@ -52,7 +52,11 @@ public class ClassDependency {
 		else if(c.isArray())
 			return toSkip(c.getComponentType());
 		else
-			return c.isMemberClass() || c.isLocalClass();
+			return c.isMemberClass() || c.isLocalClass() || c.isSynthetic();
+	}
+	
+	private boolean toSkip(Constructor c) {
+		return Modifier.isPublic(c.getModifiers()) && !Modifier.isTransient(c.getModifiers());
 	}
 	
 	private Class outbox(Class c) {

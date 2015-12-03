@@ -10,7 +10,7 @@ import it.unige.dibris.csec.dependency.DependencyCrawler;
 public class Test {
 	
 	// defe terminare con /
-	static String outdir = "/home/gabriele/Scrivania/instr/";
+	static String outdir = "/home/gabriele/Android Studio Projects/InstrApp/app/src/main/java/it/unige/dibris/csec/instr/";
 	static String pack = "it.unige.dibris.csec.instr";
 
 	public static void main(String[] args) {

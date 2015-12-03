@@ -1,5 +1,6 @@
 package it.unige.dibris.csec.codegen;
 
+import java.io.File;
 import java.util.HashMap;
 
 public class FixedWrappers {
@@ -9,15 +10,15 @@ public class FixedWrappers {
 	static {
 		map = new HashMap<Class,String>();
 		
-		//map.put(String.class, "%x.toString()");
-		//map.put(CharSequence.class, "%x.toString()");
-		//map.put(StringBuilder.class, "%x.toString()");
-		//map.put(StringBuffer.class, "%x.toString()");
-		//map.put(Class.class, "Class.forName(%x.getCanonicalName())");
+		map.put(String.class, "new String(\" + %x.toString() + \")");
+		map.put(CharSequence.class, "new String(\" + %x.toString() + \")");
+		map.put(StringBuilder.class, "new StringBuilder(\" + %x.toString() + \")");
+		map.put(StringBuffer.class, "new StringBuffer(\" + %x.toString() + \")");
+		map.put(Class.class, "Class.forName(%x.getCanonicalName())");
 		//map.put(ClassLoader.class, "ClassLoader.getSystemClassLoader()");
-		//map.put(Enum.class, "%x");
-		// map.put(Object.class, "new Object(/* unable to build %x */)");
-		// map.put(File.class, "new File(%x.getAbsolutePath())");	
+		map.put(Enum.class, "%x");
+		map.put(Object.class, "new Object(/* unable to build %x */)");
+		map.put(File.class, "new File(\" + %x.getAbsolutePath() + \")");	
 	}
 	
 	public static boolean known(Class T) {
@@ -28,7 +29,7 @@ public class FixedWrappers {
 		if(map.containsKey(T))
 			return map.get(T).replace("%x", var);
 		else
-			return "null";
+			return var + ".toString()";
 	}
 
 }

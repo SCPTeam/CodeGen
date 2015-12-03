@@ -35,13 +35,13 @@ public class WrapperBuilder {
 		writer.write("public class " + clazz.getSimpleName() + " {\n");
 		
 		for(Constructor c : clazz.getConstructors()) {
-			if(Modifier.isPublic(c.getModifiers())) {
+			if(!toSkip(c)) {
 				writeConstructor(c, writer);
 			}
 		}
 		
 		for(Method m : clazz.getMethods()) {
-			if(Modifier.isPublic(m.getModifiers())) {
+			if(!toSkip(m)) {
 				writeMethod(m, writer);
 			}
 		}
@@ -54,7 +54,7 @@ public class WrapperBuilder {
 
 	private void writeMethod(Method m, FileWriter writer) throws IOException {
 		writer.write("\n");
-		writer.write("\t@InstrumentedMethod(defClass=\"" + clazz.getCanonicalName() + "\", isInit=0, isStatic=" + ((Modifier.isStatic(m.getModifiers()))? "1" : "0") + ")\n");
+		writer.write("\t@InstrumentedMethod(defClass=\"" + clazz.getCanonicalName() + "\", isInit=false, isStatic=" + ((Modifier.isStatic(m.getModifiers()))? "true" : "false") + ")\n");
 		writer.write("\tpublic static " + m.getReturnType().getCanonicalName() + " " + m.getName() + "(");
 		if(!Modifier.isStatic(m.getModifiers()))
 			writer.write(clazz.getCanonicalName() + " self");
@@ -73,7 +73,10 @@ public class WrapperBuilder {
 		
 		if(m.getExceptionTypes().length > 0) {
 			writer.write(" throws");
-			for(Class e : m.getExceptionTypes()) {
+			for(int i = 0; i < m.getExceptionTypes().length; i++) {
+				Class e = m.getExceptionTypes()[i];
+				if(i > 0)
+					writer.write(",");
 				writer.write(" " + e.getCanonicalName());
 			}
 		}
@@ -85,7 +88,7 @@ public class WrapperBuilder {
 			if(T[i].isArray()) {
 				writer.write("\t\tHelperClass.Log(\""+ T[i].getComponentType().getCanonicalName() +"[] "
 						+ "x" + i + "copy = new " + T[i].getComponentType().getCanonicalName() + "[\" + x"+i+".length + \"]\");\n");
-				writer.write("\t\tfor(int j = 0; i < x"+i+".length; j++)\n");
+				writer.write("\t\tfor(int j = 0; j < x"+i+".length; j++)\n");
 				writer.write("\t\t\tHelperClass.Log(\"\\tx"+i+"copy[\"+j+\"] = \" + x"+i+"[j]);\n");
 			}
 		}
@@ -126,7 +129,7 @@ public class WrapperBuilder {
 		
 		if(!m.getReturnType().equals(Void.TYPE) && !m.getReturnType().isPrimitive()) {
 			
-			String metaivk = new String(invoke.toCharArray());
+			String metaivk = new String(invoke);
 			
 			for(int i = 0; i < T.length; i++) {
 				if(T[i].isPrimitive())
@@ -149,7 +152,7 @@ public class WrapperBuilder {
 
 	private void writeConstructor(Constructor c, FileWriter writer) throws IOException {
 		writer.write("\n");
-		writer.write("\t@InstrumentedMethod(defClass=\"" + clazz.getCanonicalName() + "\", isInit=1, isStatic=0)\n");
+		writer.write("\t@InstrumentedMethod(defClass=\"" + clazz.getCanonicalName() + "\", isInit=true, isStatic=false)\n");
 		writer.write("\tpublic static " + clazz.getCanonicalName() + " constructor(" + clazz.getCanonicalName() + " self");
 		Class[] T = c.getParameterTypes();
 		for(int i = 0; i < T.length; i++) {
@@ -164,7 +167,10 @@ public class WrapperBuilder {
 		
 		if(c.getExceptionTypes().length > 0) {
 			writer.write(" throws");
-			for(Class e : c.getExceptionTypes()) {
+			for(int i = 0; i < c.getExceptionTypes().length; i++) {
+				Class e = c.getExceptionTypes()[i];
+				if(i > 0)
+					writer.write(",");
 				writer.write(" " + e.getCanonicalName());
 			}
 		}
@@ -175,7 +181,7 @@ public class WrapperBuilder {
 			if(T[i].isArray()) {
 				writer.write("\t\tHelperClass.Log(\""+ T[i].getComponentType().getCanonicalName() +"[] "
 						+ "x" + i + "copy = new " + T[i].getComponentType().getCanonicalName() + "[\" + x"+i+".length + \"]\");\n");
-				writer.write("\t\tfor(int j = 0; i < x"+i+".length; j++)\n");
+				writer.write("\t\tfor(int j = 0; j < x"+i+".length; j++)\n");
 				writer.write("\t\t\tHelperClass.Log(\"\\tx"+i+"copy[\"+j+\"] = \" + x"+i+"[j]);\n");
 			}
 		}
@@ -210,6 +216,14 @@ public class WrapperBuilder {
 		else {
 			writer.write("\" + HelperClass.get(" + var + ".hashCode()) + \"");
 		}
+	}
+	
+	private boolean toSkip(Constructor c) {
+		return !Modifier.isPublic(c.getModifiers()) || Modifier.isTransient(c.getModifiers()) || Modifier.isVolatile(c.getModifiers());
+	}
+	
+	private boolean toSkip(Method c) {
+		return !Modifier.isPublic(c.getModifiers()) || Modifier.isTransient(c.getModifiers()) || Modifier.isVolatile(c.getModifiers()) || c.isBridge() || c.isSynthetic();
 	}
 
 }
