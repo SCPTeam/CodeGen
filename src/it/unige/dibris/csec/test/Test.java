@@ -9,6 +9,7 @@ import it.unige.dibris.csec.dependency.DependencyCrawler;
 
 public class Test {
 	
+	// defe terminare con /
 	static String outdir = "/home/gabriele/Scrivania/instr/";
 	static String pack = "it.unige.dibris.csec.instr";
 
